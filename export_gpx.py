@@ -1,3 +1,4 @@
+import argparse
 import sqlite3
 from collections import namedtuple
 from datetime import datetime
@@ -41,7 +42,7 @@ def create_gpx(tracks):
         for point in track:
             t = point[3]
             # '%Y-%m-%d %H:%M:%S.%f'
-            t = datetime.utcfromtimestamp(t/1000)
+            t = datetime.utcfromtimestamp(t / 1000)
             gpx_segment.points.append(
                 gpxpy.gpx.GPXTrackPoint(point[0], point[1], elevation=point[2], time=t,
                                         speed=point[4]))
@@ -50,10 +51,19 @@ def create_gpx(tracks):
     return xml
 
 
-def sqlite2gpx(sqlite_db: str):
-    outfile = "/tmp/tracks.gpx"
+def sqlite2gpx(sqlite_db: str, output_gpx: str):
     tracks = load_points_from_sqlite(sqlite_db)
     gpx = create_gpx(tracks)
-    with open(outfile, "w") as gpx_file:
+    with open(output_gpx, "w") as gpx_file:
         gpx_file.writelines(gpx)
-        print(f"Wrote GPX to {outfile}.")
+        print(f"Wrote GPX to {output_gpx}.")
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("input", type=str,
+                        help="Input SW Maps project SQLite database (ending: .swm2)")
+    parser.add_argument("output", type=str, help="Ouput GPX path.")
+    args = parser.parse_args()
+
+    sqlite2gpx(args.input, args.output)

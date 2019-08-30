@@ -30,5 +30,7 @@ def test_create_gpx(tracks):
     xml = export_gpx.create_gpx(tracks)
     # TODO
 
+
 def test_sqlite2gpx(sqlite_db):
-    export_gpx.sqlite2gpx(sqlite_db)
+    outfile = "/tmp/delme.gpx"  # TODO use tempfile
+    export_gpx.sqlite2gpx(sqlite_db, outfile)
