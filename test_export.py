@@ -1,3 +1,5 @@
+import os
+
 import pytest
 
 import export_gpx
@@ -6,7 +8,7 @@ from export_gpx import Point
 
 @pytest.fixture
 def sqlite_db():
-    return "/home/thomas/ocell/Terrestrische Datenaufnahme/swmaps_gpx_export/Project 1.swm2"
+    return "./TrackTest.swm2"
 
 
 @pytest.fixture
@@ -19,11 +21,9 @@ def tracks():
 def test_load_points(sqlite_db):
     tracks = export_gpx.load_points_from_sqlite(sqlite_db)
     assert tracks is not None
-    assert len(tracks) == 5
-    sum = 0
-    for track in tracks:
-        sum += len(track)
-    assert sum == 299
+    assert len(tracks) == 2
+    assert len(tracks[1]) == 9
+    assert len(tracks[0]) == 54
 
 
 def test_create_gpx(tracks):
@@ -34,3 +34,5 @@ def test_create_gpx(tracks):
 def test_sqlite2gpx(sqlite_db):
     outfile = "/tmp/delme.gpx"  # TODO use tempfile
     export_gpx.sqlite2gpx(sqlite_db, outfile)
+    assert os.path.isfile(outfile)
+    assert os.path.getsize(outfile) >= 5 * 1024  # should not be empty
