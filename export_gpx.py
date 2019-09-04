@@ -2,7 +2,7 @@ import argparse
 import sqlite3
 from collections import namedtuple
 from datetime import datetime
-from typing import List
+from typing import List, Tuple, Dict, Mapping, Sequence
 
 import gpxpy
 import gpxpy.gpx
@@ -10,29 +10,36 @@ import gpxpy.gpx
 Point = namedtuple("Point", "lat lon elevation time speed")
 
 
-def load_points_from_sqlite(sqlite_db: str) -> List[List]:
-    """
-    Tracks[Points[lat, lon elv, time, speed]
-    """
-    points = list()
+def load_track_name(sqlite_db: str) -> Dict[str, str]:
     db = sqlite3.connect(sqlite_db)
     cur = db.cursor()
-    fids = cur.execute("SELECT DISTINCT fid FROM points").fetchall()
-    fids = [fid[0] for fid in fids]
-    for fid in fids:
-        query = f"SELECT lat, lon, elv, time, speed FROM points WHERE fid = ?"
-        track = cur.execute(query, (fid,)).fetchall()
-        points.append(track)
+    tracks = cur.execute("SELECT uuid, name FROM tracks").fetchall()
+    tracks = {t[1]: t[0] for t in tracks}
+    print(f"Found {len(tracks)} tracks in database.")
+    return tracks
 
-    print(f"Found {len(fids)} tracks in database.")
+
+def load_points_from_sqlite(sqlite_db: str, track_names: Dict[str, str]) -> Dict[str, List]:
+    """
+    Tracks[Dict[Name, Points[lat, lon elv, time, speed]]
+    """
+    points = dict()
+    db = sqlite3.connect(sqlite_db)
+    cur = db.cursor()
+    for track_name in track_names.keys():
+        track_id = track_names[track_name]
+        query = f"SELECT lat, lon, elv, time, speed FROM points WHERE fid = ?"
+        track = cur.execute(query, (track_id,)).fetchall()
+        points[track_name] = track
+
     return points
 
 
-def create_gpx(tracks):
+def create_gpx(tracks: Mapping[str, Sequence]):
     gpx = gpxpy.gpx.GPX()
 
-    for track in tracks:
-        gpx_track = gpxpy.gpx.GPXTrack()
+    for name, track in tracks.items():
+        gpx_track = gpxpy.gpx.GPXTrack(name=name)
         gpx.tracks.append(gpx_track)
 
         # Create first segment in our GPX track:
@@ -52,7 +59,8 @@ def create_gpx(tracks):
 
 
 def sqlite2gpx(sqlite_db: str, output_gpx: str):
-    tracks = load_points_from_sqlite(sqlite_db)
+    track_names = load_track_name(sqlite_db)
+    tracks = load_points_from_sqlite(sqlite_db, track_names)
     gpx = create_gpx(tracks)
     with open(output_gpx, "w") as gpx_file:
         gpx_file.writelines(gpx)
