@@ -11,6 +11,7 @@ Point = namedtuple("Point", "lat lon elevation time speed")
 
 
 def load_track_name(sqlite_db: str) -> Dict[str, str]:
+    # TODO also add description
     db = sqlite3.connect(sqlite_db)
     cur = db.cursor()
     tracks = cur.execute("SELECT uuid, name FROM tracks").fetchall()
